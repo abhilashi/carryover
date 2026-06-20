@@ -1,0 +1,20 @@
+{
+  "name": "carryover",
+  "description": "Session handoff tools for Claude Code.",
+  "owner": {
+    "name": "abhilashi",
+    "email": "abhilashi.iiith@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "carryover",
+      "source": ".",
+      "description": "Never lose context between coding sessions — /wrap saves a handoff, /resume picks it back up and starts your next move.",
+      "license": "MIT",
+      "keywords": ["session", "handoff", "context", "productivity"],
+      "author": {
+        "name": "abhilashi"
+      }
+    }
+  ]
+}

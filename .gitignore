@@ -1,0 +1,9 @@
+# OS / editor cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local session data must never be committed — it's the user's, and lives in ~/.claude
+sessions/
+*.local.md

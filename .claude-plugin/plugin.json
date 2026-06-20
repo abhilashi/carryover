@@ -1,0 +1,14 @@
+{
+  "name": "carryover",
+  "displayName": "Carryover",
+  "description": "Never lose context between coding sessions. /wrap debriefs the session you're ending and saves a handoff; /resume reads it back and starts your next move.",
+  "version": "0.1.0",
+  "keywords": ["session", "handoff", "context", "productivity", "resume", "standup"],
+  "license": "MIT",
+  "author": {
+    "name": "abhilashi",
+    "email": "abhilashi.iiith@gmail.com"
+  },
+  "homepage": "https://github.com/abhilashi/carryover",
+  "repository": "https://github.com/abhilashi/carryover"
+}
