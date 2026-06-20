@@ -115,7 +115,9 @@ The skills auto-detect `~/.claude/carryover/venv` and use it; if it's absent the
 - The recorder auto-stops after a short pause. Tune sensitivity with `CARRYOVER_VAD_THRESHOLD`.
 - **Clear cues** so you always know what it's doing: a `🔊 SPEAKING` banner while the question plays, a "Tink" beep + `🎙 LISTENING — speak now` banner the instant it starts recording, and a "Pop" beep + `✓ HEARD: "…"` banner when it captures you. Silence the beeps with `CARRYOVER_BEEP=0`.
 
-If voice mode isn't set up, `/wrap voice` falls back to a normal typed debrief — nothing breaks.
+**Make voice your default** (so you never type `voice`): set `CARRYOVER_VOICE=1` in your shell (e.g. `~/.zshenv`), or write `voice=1` to `~/.claude/carryover/config`. Use `/wrap text` for a one-off typed debrief — handy in an open office or late at night. Text stays the default for everyone else, so a fresh install always works with zero setup.
+
+If voice mode is requested but isn't set up, it falls back to a normal typed debrief — nothing breaks.
 
 ## Privacy
 

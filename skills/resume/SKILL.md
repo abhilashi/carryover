@@ -1,12 +1,34 @@
 ---
 name: resume
-description: Start-of-session re-initiation for a coding/work session. Reads the persistent handoff written by /wrap for this project, restates where you left off (next move, blockers, regression guard), checks whether the repo changed since, and then ACTUALLY STARTS the next move rather than just naming it. Invoke when returning to a project, or via /resume. Add the argument `voice` to hear the restate spoken aloud.
+description: Start-of-session re-initiation for a coding/work session. Reads the persistent handoff written by /wrap for this project, restates where you left off (next move, blockers, regression guard), checks whether the repo changed since, and then ACTUALLY STARTS the next move rather than just naming it. Invoke when returning to a project, or via /resume. Add `voice` to hear the restate spoken aloud, or set CARRYOVER_VOICE=1 to make voice your default (`/resume text` overrides per-run).
 disable-model-invocation: true
 ---
 
 # /resume — pick up where you left off
 
 You **pick up the thread from the last session.** Your job is not to summarize and wait — it's to get the user moving in under a minute. Decomposition is done; the bottleneck is *initiation*. So you restate, sanity-check, then **start the first step yourself**.
+
+## Mode: text or voice (auto-resolved)
+
+Same resolution as `/wrap`: an explicit `/resume text|voice` wins, else your saved preference (`CARRYOVER_VOICE=1` in the env, or `voice=1` in `~/.claude/carryover/config`), else **text**. For `/resume`, "voice" just means the Step 4 restate is also **spoken aloud** — that's TTS only (macOS `say`), so it needs no API key or mic.
+
+```bash
+ARGS="$ARGUMENTS"
+VOICE=""
+for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
+  [ -f "$c" ] && VOICE="$c" && break
+done
+PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
+PREF=0
+[ -f "$HOME/.claude/carryover/config" ] && grep -qiE '^voice=(1|true|yes|on)$' "$HOME/.claude/carryover/config" && PREF=1
+case "${CARRYOVER_VOICE:-}" in 1|true|yes|on) PREF=1;; 0|false|no|off) PREF=0;; esac
+MODE=text
+if printf '%s' "$ARGS" | grep -qiw text; then MODE=text
+elif printf '%s' "$ARGS" | grep -qiw voice; then MODE=voice
+elif [ "$PREF" = 1 ]; then MODE=voice; fi
+[ -z "$VOICE" ] && MODE=text
+echo "RESOLVED: MODE=$MODE  VOICE=$VOICE  PY=$PY"
+```
 
 ## Step 1 — Resolve the project session path
 
@@ -43,18 +65,13 @@ Three lines, no more:
 > **Heads-up / don't touch:** <regression guard, + any drift you detected in step 3>
 > **▶ Next move:** <the NEXT MOVE from the handoff>
 
-**Voice mode** (`/resume voice`): also speak these aloud. Locate the helper and speak the restate:
+If `MODE=voice` (from the Mode step), also speak the restate aloud, using the resolved `VOICE`/`PY`:
 
 ```bash
-VOICE=""
-for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
-  [ -f "$c" ] && VOICE="$c" && break
-done
-PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
-[ -n "$VOICE" ] && "$PY" "$VOICE" speak "Last time: <…>. Don't touch: <…>. Next move: <…>."
+[ "$MODE" = voice ] && [ -n "$VOICE" ] && "$PY" "$VOICE" speak "Last time: <…>. Don't touch: <…>. Next move: <…>."
 ```
 
-If the helper is missing or `say`/TTS is unavailable, just restate in text — don't block.
+If the helper is missing or TTS is unavailable, just restate in text — don't block.
 
 ## Step 5 — Initiate (the whole point)
 

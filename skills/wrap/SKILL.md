@@ -1,6 +1,6 @@
 ---
 name: wrap
-description: End-of-session debrief for a coding/work session. Auto-captures git state, runs a short structured debrief (goal, blocker, next move, surprises, regression guard, confidence), and writes a persistent handoff to ~/.claude/sessions/<project>/ so the next session can resume with full context. Invoke when finishing or pausing work, or via /wrap. Add the argument `voice` for a spoken debrief.
+description: End-of-session debrief for a coding/work session. Auto-captures git state, runs a short structured debrief (goal, blocker, next move, surprises, regression guard, confidence), and writes a persistent handoff to ~/.claude/sessions/<project>/ so the next session can resume with full context. Invoke when finishing or pausing work, or via /wrap. Defaults to a typed debrief; add `voice` for a spoken one, or set CARRYOVER_VOICE=1 to make voice your default (`/wrap text` overrides per-run).
 disable-model-invocation: true
 ---
 
@@ -8,9 +8,31 @@ disable-model-invocation: true
 
 You run the **end-of-session handoff**. Before the user walks away, capture *what just happened* and *the one next move*, so the next session (theirs or another agent's) resumes cold without losing the thread. Keep it fast and warm — a 2-minute debrief, not a form. Don't lecture or pep-talk; capture and commit to a concrete next action.
 
-## Mode: text (default) or voice
+## Mode: text or voice (auto-resolved)
 
-If `$ARGUMENTS` contains `voice` (i.e. the user ran `/wrap voice`) or the user asks to do it by voice, use **Voice mode** for asking the questions in Step 3 — see the "Voice mode" section at the bottom. Otherwise ask in text. Everything else (capture, file writing) is identical.
+Run this first to decide the mode. Resolution order: an explicit `/wrap text` or `/wrap voice` arg wins; otherwise the user's saved preference (`CARRYOVER_VOICE=1` in the env, or `voice=1` in `~/.claude/carryover/config`); otherwise **text**. If voice ends up chosen but deps/key/mic aren't ready, it falls back to text automatically.
+
+```bash
+ARGS="$ARGUMENTS"
+VOICE=""
+for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
+  [ -f "$c" ] && VOICE="$c" && break
+done
+PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
+PREF=0
+[ -f "$HOME/.claude/carryover/config" ] && grep -qiE '^voice=(1|true|yes|on)$' "$HOME/.claude/carryover/config" && PREF=1
+case "${CARRYOVER_VOICE:-}" in 1|true|yes|on) PREF=1;; 0|false|no|off) PREF=0;; esac
+MODE=text
+if printf '%s' "$ARGS" | grep -qiw text; then MODE=text
+elif printf '%s' "$ARGS" | grep -qiw voice; then MODE=voice
+elif [ "$PREF" = 1 ]; then MODE=voice; fi
+if [ "$MODE" = voice ] && { [ -z "$VOICE" ] || ! "$PY" "$VOICE" check >/dev/null 2>&1; }; then
+  echo "note: voice requested/preferred but not ready — using text"; MODE=text
+fi
+echo "RESOLVED: MODE=$MODE  VOICE=$VOICE  PY=$PY"
+```
+
+If `MODE=voice`, ask the Step 3 questions via the **Voice mode** section at the bottom (using the `VOICE`/`PY` resolved here). If `MODE=text`, ask in text. Everything else (capture, file writing) is identical. If you fell back from a requested voice mode, tell the user why (the printed note) so they can fix setup.
 
 ## Step 1 — Resolve the project session path
 
@@ -103,23 +125,9 @@ Do not start new work after /wrap — the session is ending.
 
 ## Voice mode
 
-Used only when invoked as `/wrap voice`. The "call" is spoken — no phone number, just the local mic + an OpenAI key. If voice isn't available, fall back to text seamlessly.
+Reached when the Mode step resolved `MODE=voice`. The "call" is spoken — no phone number, just the local mic + an OpenAI key. `VOICE` and `PY` were already resolved (and `voice.py check` already passed) in the Mode step, so use them directly. To make voice your default so you never type `voice` again, set `CARRYOVER_VOICE=1` (e.g. in `~/.zshenv`) or write `voice=1` to `~/.claude/carryover/config`; use `/wrap text` for a one-off typed debrief.
 
-**A. Locate and check the helper:**
-
-```bash
-VOICE=""
-for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
-  [ -f "$c" ] && VOICE="$c" && break
-done
-PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
-echo "VOICE=$VOICE PY=$PY"
-[ -n "$VOICE" ] && "$PY" "$VOICE" check; echo "check_exit=$?"
-```
-
-- If `VOICE` is empty or `check_exit` is non-zero, tell the user voice mode isn't ready (relay the reason printed on stderr — usually "install deps" or "OPENAI_API_KEY not set"), then **do the debrief in text instead**. Setup is `pip install -r ~/.claude/carryover/requirements.txt` + `export OPENAI_API_KEY=...`, plus granting the terminal microphone permission on first run.
-
-**B. Ask each Step 3 question by voice.** For each question, run:
+**A. Ask each Step 3 question by voice.** For each question, run:
 
 ```bash
 "$PY" "$VOICE" ask "What were you trying to get done this session?"
@@ -127,4 +135,4 @@ echo "VOICE=$VOICE PY=$PY"
 
 The transcript is printed to **stdout** (capture it as the answer); status/the heard text go to stderr. After each answer, show the transcript in text and let the user correct it by typing if it misheard. If a single `ask` fails (exit 3/4 = no speech / empty), retry once, then offer to type that one answer.
 
-**C.** Then continue to Step 4 exactly as in text mode.
+**B.** Then continue to Step 4 exactly as in text mode.
