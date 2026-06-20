@@ -11,3 +11,6 @@ sessions/
 # Python
 __pycache__/
 *.pyc
+
+# demo intermediate (regenerate from docs/demo-playback.sh)
+docs/*.cast

@@ -4,6 +4,8 @@
 
 **Never lose context between coding sessions.**
 
+![Carryover — /wrap saves a handoff, /resume reads it back and starts your next move](docs/carryover.gif)
+
 You close Claude Code mid-task. Tomorrow you open it and the AI has forgotten everything — what you were doing, what's half-broken, what *not* to touch. You burn the first 20 minutes rebuilding context, or worse, the model "helpfully" rewrites something that was already working.
 
 Carryover fixes that with two commands:
