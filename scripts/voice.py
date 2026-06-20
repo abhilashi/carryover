@@ -43,6 +43,30 @@ def have_key():
     return bool(os.environ.get("OPENAI_API_KEY"))
 
 
+# --------------------------------------------------------------------------- cues
+
+BEEP_ENABLED = os.environ.get("CARRYOVER_BEEP", "1") != "0"
+SYS_SOUNDS = "/System/Library/Sounds"
+
+
+def beep(name):
+    """Short audible cue so you know when to talk / when capture stopped — even
+    without watching the screen. Uses a macOS system sound; falls back to BEL."""
+    if not BEEP_ENABLED:
+        return
+    snd = os.path.join(SYS_SOUNDS, f"{name}.aiff")
+    if shutil.which("afplay") and os.path.exists(snd):
+        subprocess.run(["afplay", snd], check=False)
+    else:
+        sys.stderr.write("\a")
+        sys.stderr.flush()
+
+
+def banner(text):
+    """Prominent, unmissable status line on stderr (the visible cue)."""
+    err(f"\n  ▏ {text}\n")
+
+
 # ----------------------------------------------------------------------------- TTS
 
 def _play(path):
@@ -57,6 +81,7 @@ def _play(path):
 
 
 def speak(text):
+    banner("🔊 SPEAKING — listen…")
     mode = os.environ.get("CARRYOVER_TTS", "say")
     if mode == "openai" and have_key():
         try:
@@ -105,7 +130,12 @@ def record(max_seconds=60, start_timeout=8.0, silence_limit=1.6):
                 d, _ = stream.read(block)
                 cal.append(rms(d))
             threshold = max(float(np.mean(cal)) * 3.0, 0.01)
-        err(f"[voice] listening… (threshold={threshold:.4f}, pause when you're done)")
+        # audible + visible cue that capture is starting; drain the beep's echo
+        # out of the mic buffer so it can't false-trigger speech detection.
+        beep("Tink")
+        for _ in range(3):
+            stream.read(block)
+        banner(f"🎙  LISTENING — speak now, then pause to finish  (threshold={threshold:.4f})")
         while True:
             data, _ = stream.read(block)
             frames.append(data.copy())
@@ -174,16 +204,18 @@ def cmd_speak(text):
 
 
 def cmd_ask(question):
-    speak(question)
-    audio = record()
+    speak(question)                  # shows "🔊 SPEAKING" cue
+    audio = record()                 # plays start beep + shows "🎙 LISTENING" cue
+    beep("Pop")                      # audible "capture stopped" cue
     if audio is None:
-        err("[voice] no speech detected")
+        banner("🤫 didn't hear anything — let's try that one again")
         sys.exit(3)
+    err("  ▏ ⏳ transcribing…")
     text = transcribe(audio)
     if not text:
-        err("[voice] empty transcript")
+        banner("⚠️  empty transcript — try again")
         sys.exit(4)
-    err(f"[voice] heard: {text}")
+    banner(f"✓ HEARD: \"{text}\"")
     print(text)  # stdout = transcript only
 
 

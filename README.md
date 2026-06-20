@@ -1,5 +1,7 @@
 # Carryover
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) · **A Claude Code plugin** · [launch copy](docs/launch.md) · [demo script](docs/demo.md)
+
 **Never lose context between coding sessions.**
 
 You close Claude Code mid-task. Tomorrow you open it and the AI has forgotten everything — what you were doing, what's half-broken, what *not* to touch. You burn the first 20 minutes rebuilding context, or worse, the model "helpfully" rewrites something that was already working.
@@ -109,6 +111,7 @@ The skills auto-detect `~/.claude/carryover/venv` and use it; if it's absent the
 - **Speech-to-text** uses the OpenAI transcription API (`gpt-4o-mini-transcribe` by default; override with `CARRYOVER_STT_MODEL`).
 - On first run, grant your terminal **microphone permission** when macOS prompts.
 - The recorder auto-stops after a short pause. Tune sensitivity with `CARRYOVER_VAD_THRESHOLD`.
+- **Clear cues** so you always know what it's doing: a `🔊 SPEAKING` banner while the question plays, a "Tink" beep + `🎙 LISTENING — speak now` banner the instant it starts recording, and a "Pop" beep + `✓ HEARD: "…"` banner when it captures you. Silence the beeps with `CARRYOVER_BEEP=0`.
 
 If voice mode isn't set up, `/wrap voice` falls back to a normal typed debrief — nothing breaks.
 
