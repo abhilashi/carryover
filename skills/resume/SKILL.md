@@ -1,6 +1,6 @@
 ---
 name: resume
-description: Start-of-session re-initiation for a coding/work session. Reads the persistent handoff written by /wrap for this project, restates where you left off (next move, blockers, regression guard), checks whether the repo changed since, and then ACTUALLY STARTS the next move rather than just naming it. Invoke when returning to a project, or via /resume.
+description: Start-of-session re-initiation for a coding/work session. Reads the persistent handoff written by /wrap for this project, restates where you left off (next move, blockers, regression guard), checks whether the repo changed since, and then ACTUALLY STARTS the next move rather than just naming it. Invoke when returning to a project, or via /resume. Add the argument `voice` to hear the restate spoken aloud.
 disable-model-invocation: true
 ---
 
@@ -42,6 +42,18 @@ Three lines, no more:
 > **Last time:** <one line — where they left off>
 > **Heads-up / don't touch:** <regression guard, + any drift you detected in step 3>
 > **▶ Next move:** <the NEXT MOVE from the handoff>
+
+**Voice mode** (`/resume voice`): also speak these aloud. Locate the helper and speak the restate:
+
+```bash
+VOICE=""
+for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
+  [ -f "$c" ] && VOICE="$c" && break
+done
+[ -n "$VOICE" ] && python3 "$VOICE" speak "Last time: <…>. Don't touch: <…>. Next move: <…>."
+```
+
+If the helper is missing or `say`/TTS is unavailable, just restate in text — don't block.
 
 ## Step 5 — Initiate (the whole point)
 
