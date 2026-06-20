@@ -50,7 +50,8 @@ VOICE=""
 for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
   [ -f "$c" ] && VOICE="$c" && break
 done
-[ -n "$VOICE" ] && python3 "$VOICE" speak "Last time: <…>. Don't touch: <…>. Next move: <…>."
+PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
+[ -n "$VOICE" ] && "$PY" "$VOICE" speak "Last time: <…>. Don't touch: <…>. Next move: <…>."
 ```
 
 If the helper is missing or `say`/TTS is unavailable, just restate in text — don't block.

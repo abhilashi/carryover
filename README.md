@@ -97,9 +97,13 @@ It's a "call" with **no phone number** — just your local microphone and an API
 **Setup:**
 
 ```bash
-pip install -r ~/.claude/carryover/requirements.txt   # sounddevice, soundfile, numpy
+# one-time: isolated venv for the audio deps (avoids PEP 668 / touching system Python)
+python3 -m venv ~/.claude/carryover/venv
+~/.claude/carryover/venv/bin/pip install -r ~/.claude/carryover/requirements.txt
 export OPENAI_API_KEY=sk-...                           # used for speech-to-text
 ```
+
+The skills auto-detect `~/.claude/carryover/venv` and use it; if it's absent they fall back to `python3`.
 
 - **Text-to-speech** uses macOS `say` by default (free, offline). Set `CARRYOVER_TTS=openai` to use OpenAI voices instead.
 - **Speech-to-text** uses the OpenAI transcription API (`gpt-4o-mini-transcribe` by default; override with `CARRYOVER_STT_MODEL`).

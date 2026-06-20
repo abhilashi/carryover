@@ -95,7 +95,7 @@ Confirm in one line: where the handoff was saved, and read back the NEXT MOVE so
 
 > Wrapped. Next session, `/resume` will open with: **"<next move>"**. Saved to `~/.claude/sessions/<slug>/handoff.md`.
 
-In voice mode, also speak the closing: `python3 "$VOICE" speak "Wrapped. Next move: <next move>"`.
+In voice mode, also speak the closing: `"$PY" "$VOICE" speak "Wrapped. Next move: <next move>"`.
 
 Do not start new work after /wrap — the session is ending.
 
@@ -112,8 +112,9 @@ VOICE=""
 for c in "$CLAUDE_PLUGIN_ROOT/scripts/voice.py" "$HOME/.claude/carryover/voice.py" "$HOME/carryover/scripts/voice.py"; do
   [ -f "$c" ] && VOICE="$c" && break
 done
-echo "VOICE=$VOICE"
-[ -n "$VOICE" ] && python3 "$VOICE" check; echo "check_exit=$?"
+PY="python3"; [ -x "$HOME/.claude/carryover/venv/bin/python" ] && PY="$HOME/.claude/carryover/venv/bin/python"
+echo "VOICE=$VOICE PY=$PY"
+[ -n "$VOICE" ] && "$PY" "$VOICE" check; echo "check_exit=$?"
 ```
 
 - If `VOICE` is empty or `check_exit` is non-zero, tell the user voice mode isn't ready (relay the reason printed on stderr — usually "install deps" or "OPENAI_API_KEY not set"), then **do the debrief in text instead**. Setup is `pip install -r ~/.claude/carryover/requirements.txt` + `export OPENAI_API_KEY=...`, plus granting the terminal microphone permission on first run.
@@ -121,7 +122,7 @@ echo "VOICE=$VOICE"
 **B. Ask each Step 3 question by voice.** For each question, run:
 
 ```bash
-python3 "$VOICE" ask "What were you trying to get done this session?"
+"$PY" "$VOICE" ask "What were you trying to get done this session?"
 ```
 
 The transcript is printed to **stdout** (capture it as the answer); status/the heard text go to stderr. After each answer, show the transcript in text and let the user correct it by typing if it misheard. If a single `ask` fails (exit 3/4 = no speech / empty), retry once, then offer to type that one answer.
